@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cup-agent"
+version = "0.0.1"
+description = "Cup: an agentic AI framework that runs tiny language models (cuplm) efficiently on weak and legacy CPUs."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "cuplm" }]
+keywords = ["llm", "slm", "agent", "agentic", "local", "cpu", "edge", "offline", "llama.cpp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# Core has ZERO hard deps so it imports and runs (mock mode, tests) on any
+# Python. The actual inference engine is an optional extra so install stays
+# lightweight on weak devices.
+dependencies = []
+
+[project.optional-dependencies]
+# The real inference backend. The heavy lifting is C++ (llama.cpp); this is a
+# thin binding over it.
+llama = ["llama-cpp-python>=0.2.0"]
+dev = ["pytest>=7", "ruff>=0.1"]
+
+[project.scripts]
+cup = "cup.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/REPLACE_ME/cuplm"
+Repository = "https://github.com/REPLACE_ME/cuplm"
+
+[tool.setuptools.packages.find]
+include = ["cup*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"

@@ -1,0 +1,43 @@
+# Models (large binaries — never commit these)
+models/
+*.gguf
+*.bin
+*.safetensors
+
+# Virtual env (this project's venv) — never commit
+cuplm-env/
+
+# Vendored llama.cpp binaries — re-downloadable, not source
+vendor/
+
+# Scratch/demo working dir
+demo/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Training artifacts
+training/data/*.jsonl
+training/checkpoints/
+training/runs/
