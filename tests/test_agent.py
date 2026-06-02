@@ -81,6 +81,17 @@ def test_direct_answer_no_tool():
     assert result.steps and result.steps[0].tool_name is None
 
 
+def test_grammar_includes_tool_names_and_root():
+    from cup.grammar import build_react_grammar
+
+    config = Config(workdir=".", verbose=False)
+    g = build_react_grammar(build_default_registry(config))
+    assert "root" in g and "toolcall" in g and "final" in g
+    assert '"file_stats"' in g and '"read_file"' in g
+    # JSON object rule present for Action Input
+    assert "object" in g and "string" in g
+
+
 def test_truncate_at_stops():
     from cup.engine import _truncate_at_stops
 

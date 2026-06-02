@@ -19,6 +19,7 @@ from typing import List, Optional
 
 from cup.config import Config
 from cup.engine import Engine
+from cup.grammar import build_react_grammar
 from cup.prompts import build_prompt, build_system_prompt
 from cup.tools import ParseResult, ToolRegistry, parse
 
@@ -46,6 +47,7 @@ class Agent:
         self.tools = tools
         self.config = config or Config()
         self.system = build_system_prompt(tools, no_think=self.config.no_think)
+        self.grammar = build_react_grammar(tools) if self.config.grammar else None
 
     def _log(self, msg: str) -> None:
         if self.config.verbose:
@@ -69,6 +71,7 @@ class Agent:
                 ],
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature,
+                grammar=self.grammar,
             ).strip()
 
             self._log(completion)

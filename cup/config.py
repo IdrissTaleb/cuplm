@@ -33,7 +33,7 @@ class Config:
     # tokens; capping it bounds wasted generation (the main per-step latency
     # cost after model size).
     max_tokens: int = _env_int("CUP_MAX_TOKENS", 256)
-    temperature: float = 0.3  # low: agentic tasks want determinism, not flair
+    temperature: float = 0.2  # agentic tasks want determinism; lower = less variance
 
     # Agent loop safety: hard cap on think->act cycles before we bail.
     max_steps: int = _env_int("CUP_MAX_STEPS", 8)
@@ -50,3 +50,9 @@ class Config:
 
     # Disable a reasoning model's <think> phase (e.g. Qwen3) for speed.
     no_think: bool = os.environ.get("CUP_NO_THINK", "0") == "1"
+
+    # Constrain decoding to valid ReAct via a GBNF grammar (llama.cpp server
+    # only). Guarantees valid structure + real tool names, but on a weak stock
+    # model it's score-neutral and slower, so it's opt-in. Expected to pay off
+    # on the fine-tuned cuplm. Enable with `--grammar` or CUP_GRAMMAR=1.
+    grammar: bool = os.environ.get("CUP_GRAMMAR", "0") == "1"

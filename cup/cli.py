@@ -45,6 +45,8 @@ def build_agent(args) -> Agent:
         config.allow_shell = False
     if getattr(args, "no_think", False):
         config.no_think = True
+    if getattr(args, "grammar", False):
+        config.grammar = True
     # Quiet by default; reasoning is shown only when asked (--info/--background,
     # or per-line in chat mode).
     config.verbose = bool(getattr(args, "info", False) or getattr(args, "background", False))
@@ -102,6 +104,10 @@ def _add_engine_args(p: argparse.ArgumentParser) -> None:
     p.add_argument(
         "--no-think", action="store_true",
         help="Disable a reasoning model's thinking phase (recommended for Qwen3)",
+    )
+    p.add_argument(
+        "--grammar", action="store_true",
+        help="Force valid ReAct output via GBNF grammar (llama.cpp server; best with cuplm)",
     )
 
 

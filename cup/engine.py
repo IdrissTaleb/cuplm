@@ -27,9 +27,11 @@ class Engine(Protocol):
         stop: Sequence[str],
         max_tokens: int,
         temperature: float,
+        grammar: "str | None" = None,
     ) -> str:
         """Return the model's continuation of `prompt`, stopping at any `stop`
-        string (the stop string itself is not included)."""
+        string (the stop string itself is not included). `grammar` is an optional
+        GBNF string; engines that can't constrain decoding ignore it."""
         ...
 
 
@@ -107,16 +109,20 @@ class LlamaServerEngine:
         stop: Sequence[str],
         max_tokens: int,
         temperature: float,
+        grammar: "str | None" = None,
     ) -> str:
-        payload = json.dumps(
-            {
-                "prompt": prompt,
-                "n_predict": max_tokens,
-                "temperature": temperature,
-                "stop": list(stop),
-                "cache_prompt": True,  # reuse KV cache across steps -> much faster
-            }
-        ).encode("utf-8")
+        body = {
+            "prompt": prompt,
+            "n_predict": max_tokens,
+            "temperature": temperature,
+            "stop": list(stop),
+            "cache_prompt": True,   # reuse KV cache across steps -> much faster
+            "repeat_penalty": 1.1,  # tiny models loop; mild penalty curbs it
+            "repeat_last_n": 96,
+        }
+        if grammar:
+            body["grammar"] = grammar  # llama.cpp constrains decoding to this GBNF
+        payload = json.dumps(body).encode("utf-8")
         req = urllib.request.Request(
             f"{self.base_url}/completion",
             data=payload,
@@ -184,6 +190,7 @@ class TransformersEngine:
         stop: Sequence[str],
         max_tokens: int,
         temperature: float,
+        grammar: "str | None" = None,  # ignored: HF path doesn't constrain decoding here
     ) -> str:
         torch = self._torch
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.model.device)
@@ -218,6 +225,7 @@ class MockEngine:
         stop: Sequence[str],
         max_tokens: int,
         temperature: float,
+        grammar: "str | None" = None,
     ) -> str:
         if self._i >= len(self._responses):
             # Fail safe: end the loop rather than hang.
