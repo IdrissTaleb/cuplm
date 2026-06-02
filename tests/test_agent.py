@@ -59,6 +59,28 @@ def test_final_answer_stops_at_trailing_ramble():
     assert r.final == "notes.txt has 2 lines."
 
 
+def test_parse_collapses_duplicate_final_answer():
+    r = parse("Final Answer: 3 lines.\nFinal Answer: 3 lines.")
+    assert r.kind == "final"
+    assert r.final == "3 lines."
+
+
+def test_parse_stops_final_at_trailing_answer_label():
+    r = parse("Final Answer: notes.txt has 3 lines.\n\nAnswer: 91 bytes.")
+    assert r.final == "notes.txt has 3 lines."
+
+
+def test_direct_answer_no_tool():
+    # The model should be able to answer without any Action.
+    config = Config(workdir=".", verbose=False)
+    registry = build_default_registry(config)
+    agent = Agent(engine=MockEngine(["Final Answer: My name is Cup."]), tools=registry, config=config)
+    result = agent.run("What is your name?")
+    assert result.stopped_reason == "final"
+    assert result.answer == "My name is Cup."
+    assert result.steps and result.steps[0].tool_name is None
+
+
 def test_think_blocks_are_stripped():
     r = parse("<think>let me reason about this</think>\nAction: list_dir\nAction Input: .")
     assert r.kind == "action"

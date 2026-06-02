@@ -63,7 +63,10 @@ class Agent:
             # is rambling past what we asked for — halt server-side to save time.
             completion = self.engine.generate(
                 prompt,
-                stop=["Observation:", "\nQuestion:", "\nThought:", "\nNote:", "\nObservation"],
+                stop=[
+                    "Observation:", "\nQuestion:", "\nThought:",
+                    "\nNote:", "\nObservation", "\nAnswer:",
+                ],
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature,
             ).strip()

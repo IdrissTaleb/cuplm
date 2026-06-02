@@ -75,7 +75,10 @@ class ToolRegistry:
 # answer (observed with Llama-3.2-3B).
 _FINAL_RE = re.compile(
     r"final\s*answer\s*:\s*(.*?)"
-    r"(?:\n\s*(?:thought|action|observation|note|question)\s*[:\-]|\n\s*\n|$)",
+    # Stop at: a new section, a REPEATED "Final Answer"/"Answer:" line (small
+    # models love to restate the answer), a blank line, or end of text.
+    r"(?:\n\s*(?:thought|action|observation|note|question|final\s*answer|answer)\s*[:\-]"
+    r"|\n\s*\n|$)",
     re.IGNORECASE | re.DOTALL,
 )
 _ACTION_RE = re.compile(r"action\s*:\s*([^\n]+)", re.IGNORECASE)
