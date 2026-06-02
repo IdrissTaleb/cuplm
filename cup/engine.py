@@ -126,7 +126,12 @@ class LlamaServerEngine:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-        except urllib.error.URLError as exc:  # pragma: no cover - network path
+        except urllib.error.HTTPError as exc:  # server reachable but errored
+            body = exc.read().decode("utf-8", "replace")
+            raise RuntimeError(
+                f"llama.cpp server returned HTTP {exc.code}: {body}"
+            ) from exc
+        except urllib.error.URLError as exc:  # genuine connection failure
             raise ConnectionError(
                 f"Could not reach llama.cpp server at {self.base_url}. "
                 "Is it running? Start it with `llama-server -m model.gguf --port 8080`."

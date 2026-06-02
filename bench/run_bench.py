@@ -154,11 +154,12 @@ def _print_summary(outcomes: List[TaskOutcome]) -> None:
 
 
 def _check_server_reachable(server_url: str) -> bool:
-    """Probe the server with a trivial completion. Returns False if unreachable."""
-    engine = LlamaServerEngine(base_url=server_url, timeout=10.0)
+    """Probe the server's /health endpoint. Returns False if unreachable."""
+    import urllib.request
+
     try:
-        engine.generate("ping", stop=["\n"], max_tokens=1, temperature=0.0)
-        return True
+        with urllib.request.urlopen(server_url.rstrip("/") + "/health", timeout=10.0) as resp:
+            return resp.status == 200
     except Exception as exc:
         print(f"ERROR: could not reach llama.cpp server at {server_url}: {exc}")
         return False
