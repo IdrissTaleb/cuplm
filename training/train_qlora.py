@@ -146,7 +146,7 @@ def train(args) -> int:
         save_strategy="epoch",
         bf16=torch.cuda.is_available(),
         report_to=[],
-        max_steps=2 if args.smoke else -1,
+        max_steps=args.max_steps if args.max_steps else (2 if args.smoke else -1),
     )
     trainer = Trainer(
         model=model, args=targs, train_dataset=ds,
@@ -177,6 +177,7 @@ def main(argv=None) -> int:
     p.add_argument("--lora-r", type=int, default=16)
     p.add_argument("--max-len", type=int, default=1024)
     p.add_argument("--4bit", dest="four_bit", action="store_true", help="QLoRA 4-bit (GPU)")
+    p.add_argument("--max-steps", type=int, default=0, help="Cap training steps (0 = full run)")
     p.add_argument("--smoke", action="store_true", help="Tiny 2-step run to prove the pipeline")
     p.add_argument("--validate", action="store_true", help="Check tokenization/masking only (no torch)")
     args = p.parse_args(argv)
