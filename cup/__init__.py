@@ -8,7 +8,13 @@ already owns.
 
 from cup.agent import Agent
 from cup.config import Config
-from cup.engine import Engine, LlamaCppEngine, LlamaServerEngine, MockEngine
+from cup.engine import (
+    Engine,
+    LlamaCppEngine,
+    LlamaServerEngine,
+    MockEngine,
+    TransformersEngine,
+)
 from cup.tools import Tool, ToolRegistry
 
 __version__ = "0.0.1"
@@ -19,6 +25,7 @@ __all__ = [
     "Engine",
     "LlamaCppEngine",
     "LlamaServerEngine",
+    "TransformersEngine",
     "MockEngine",
     "Tool",
     "ToolRegistry",

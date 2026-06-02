@@ -21,7 +21,7 @@ import time
 from cup import __version__
 from cup.agent import Agent
 from cup.config import Config
-from cup.engine import LlamaCppEngine, LlamaServerEngine, MockEngine
+from cup.engine import LlamaCppEngine, LlamaServerEngine, MockEngine, TransformersEngine
 from cup.skills import build_default_registry
 
 
@@ -55,6 +55,8 @@ def build_agent(args) -> Agent:
         engine = _demo_mock_engine()
     elif getattr(args, "server", None):
         engine = LlamaServerEngine(base_url=args.server)
+    elif getattr(args, "hf", None):
+        engine = TransformersEngine(args.hf, adapter=getattr(args, "adapter", None))
     elif config.model_path:
         engine = LlamaCppEngine(
             model_path=config.model_path,
@@ -93,6 +95,8 @@ def _add_engine_args(p: argparse.ArgumentParser) -> None:
         help="URL of a running llama.cpp server (or set CUP_SERVER)",
     )
     p.add_argument("--workdir", help="Directory the agent is confined to (default: CWD)")
+    p.add_argument("--hf", help="Run a HuggingFace model in-process (id or path), e.g. Qwen/Qwen3-0.6B")
+    p.add_argument("--adapter", help="LoRA adapter dir to load on top of --hf (a trained cuplm)")
     p.add_argument("--mock", action="store_true", help="Use the scripted mock engine")
     p.add_argument("--no-shell", action="store_true", help="Disable the run_command tool")
     p.add_argument(

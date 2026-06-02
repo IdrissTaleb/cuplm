@@ -81,6 +81,15 @@ def test_direct_answer_no_tool():
     assert result.steps and result.steps[0].tool_name is None
 
 
+def test_truncate_at_stops():
+    from cup.engine import _truncate_at_stops
+
+    assert _truncate_at_stops("hello\nObservation: x", ["\nObservation:"]) == "hello"
+    assert _truncate_at_stops("no stop here", ["\nObservation:"]) == "no stop here"
+    # earliest stop wins
+    assert _truncate_at_stops("a Thought: b Note: c", [" Note:", " Thought:"]) == "a"
+
+
 def test_think_blocks_are_stripped():
     r = parse("<think>let me reason about this</think>\nAction: list_dir\nAction Input: .")
     assert r.kind == "action"
