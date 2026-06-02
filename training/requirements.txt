@@ -1,0 +1,10 @@
+# Install on a GPU box for real training:  pip install -r training/requirements.txt
+# For the local masking check (`--validate`) you only need `transformers`.
+torch>=2.2
+transformers>=4.51          # Qwen3 architecture support landed here
+peft>=0.10
+accelerate>=0.30
+datasets>=2.18
+sentencepiece
+# QLoRA 4-bit; GPU/Linux only (skip on Windows/CPU — script falls back to LoRA)
+bitsandbytes>=0.43 ; platform_system != "Windows"
