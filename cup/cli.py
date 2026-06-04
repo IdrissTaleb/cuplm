@@ -47,6 +47,8 @@ def build_agent(args) -> Agent:
         config.no_think = True
     if getattr(args, "grammar", False):
         config.grammar = True
+    if getattr(args, "chat_format", False):
+        config.chat_format = True
     # Quiet by default; reasoning is shown only when asked (--info/--background,
     # or per-line in chat mode).
     config.verbose = bool(getattr(args, "info", False) or getattr(args, "background", False))
@@ -108,6 +110,10 @@ def _add_engine_args(p: argparse.ArgumentParser) -> None:
     p.add_argument(
         "--grammar", action="store_true",
         help="Force valid ReAct output via GBNF grammar (llama.cpp server; best with cuplm)",
+    )
+    p.add_argument(
+        "--chat-format", action="store_true", dest="chat_format",
+        help="Use chat-template format for instruct models (Qwen2.5-Coder, Qwen3, etc.)",
     )
 
 

@@ -56,3 +56,9 @@ class Config:
     # model it's score-neutral and slower, so it's opt-in. Expected to pay off
     # on the fine-tuned cuplm. Enable with `--grammar` or CUP_GRAMMAR=1.
     grammar: bool = os.environ.get("CUP_GRAMMAR", "0") == "1"
+
+    # Use chat-template format (<|im_start|>/<|im_end|>) instead of raw text.
+    # Required for instruct-tuned models (Qwen2.5-Coder-Instruct, Qwen3, etc.)
+    # to correctly separate system/user/assistant roles. Enable with
+    # --chat-format or CUP_CHAT_FORMAT=1.
+    chat_format: bool = os.environ.get("CUP_CHAT_FORMAT", "0") == "1"

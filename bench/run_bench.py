@@ -61,7 +61,7 @@ def _build_engine(task: Task, mode: str, server_url: str):
     return LlamaServerEngine(base_url=server_url)
 
 
-def run_task(task: Task, mode: str, server_url: str) -> TaskOutcome:
+def run_task(task: Task, mode: str, server_url: str, chat_format: bool = False) -> TaskOutcome:
     workdir = tempfile.mkdtemp(prefix=f"cupbench_{task.name}_")
     try:
         task.setup(workdir)
@@ -71,6 +71,7 @@ def run_task(task: Task, mode: str, server_url: str) -> TaskOutcome:
             verbose=False,
             allow_shell=True,
             max_steps=8,
+            chat_format=chat_format,
         )
         registry = build_default_registry(config)
         engine = _build_engine(task, mode, server_url)
@@ -182,6 +183,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         help="Run every task against a running llama.cpp server (e.g. "
         "http://localhost:8080).",
     )
+    parser.add_argument(
+        "--chat-format", action="store_true", dest="chat_format",
+        help="Use chat-template format for instruct models (Qwen2.5-Coder, etc.)",
+    )
     args = parser.parse_args(argv)
 
     if args.mock:
@@ -193,7 +198,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         if not _check_server_reachable(server_url):
             return 2
 
-    outcomes = [run_task(task, mode, server_url) for task in TASKS]
+    chat_format = getattr(args, "chat_format", False)
+    outcomes = [run_task(task, mode, server_url, chat_format=chat_format) for task in TASKS]
 
     _print_table(outcomes)
     _print_summary(outcomes)

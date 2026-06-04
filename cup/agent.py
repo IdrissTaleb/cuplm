@@ -20,7 +20,7 @@ from typing import List, Optional
 from cup.config import Config
 from cup.engine import Engine
 from cup.grammar import build_react_grammar
-from cup.prompts import build_prompt, build_system_prompt
+from cup.prompts import build_prompt, build_prompt_chat, build_system_prompt
 from cup.tools import ParseResult, ToolRegistry, parse
 
 
@@ -58,21 +58,30 @@ class Agent:
         steps: List[Step] = []
         nudged = False
 
+        _prompt_fn = build_prompt_chat if self.config.chat_format else build_prompt
+        # chat_format primes the first step with "Thought:" so we re-attach it
+        # to the completion for correct scratchpad and parse alignment.
+        _chat_primer = "Thought:" if self.config.chat_format else ""
+
         for _ in range(self.config.max_steps):
-            prompt = build_prompt(self.system, question, scratchpad)
+            prompt = _prompt_fn(self.system, question, scratchpad)
             # Stop the moment a step is complete. A *second* section (a new
             # Thought/Observation/Note/Question on its own line) means the model
             # is rambling past what we asked for — halt server-side to save time.
-            completion = self.engine.generate(
+            # <|im_end|> terminates the assistant turn in chat-template models.
+            raw = self.engine.generate(
                 prompt,
                 stop=[
                     "Observation:", "\nQuestion:", "\nThought:",
-                    "\nNote:", "\nObservation", "\nAnswer:",
+                    "\nNote:", "\nObservation", "\nAnswer:", "<|im_end|>",
                 ],
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature,
                 grammar=self.grammar,
             ).strip()
+            # Re-attach the primer if the prompt pre-filled it (empty scratchpad).
+            primer = _chat_primer if (self.config.chat_format and not scratchpad) else ""
+            completion = (primer + raw).strip() if primer else raw
 
             self._log(completion)
             result: ParseResult = parse(completion)
