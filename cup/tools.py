@@ -119,6 +119,11 @@ def _coerce_args(raw: str) -> ToolArgs:
 # Strip it before parsing so it never interferes with action/answer extraction.
 _THINK_RE = re.compile(r"<think>.*?</think>", re.IGNORECASE | re.DOTALL)
 
+# Some models echo the format placeholders literally (<answer>, <input>, etc.).
+# If the model outputs ONLY a bare tag (nothing after stripping it), we treat
+# that as "none"; if there's real text alongside it, strip just the tags.
+_BARE_TAG_RE = re.compile(r"<[a-zA-Z_][a-zA-Z0-9_ ]*>", re.IGNORECASE)
+
 
 def parse(text: str) -> ParseResult:
     """Parse a model completion into the next agent step.
@@ -127,6 +132,9 @@ def parse(text: str) -> ParseResult:
     and a final answer; the answer is the safer terminal choice only if no
     action precedes it — so we check action first when both appear inline)."""
     text = _THINK_RE.sub("", text)
+    # Strip placeholder tags the model sometimes echoes verbatim from the prompt
+    # (e.g. outputs "Final Answer: <answer>" instead of the real text).
+    text = _BARE_TAG_RE.sub("", text)
     # If the model produced an Action, prefer acting (unless a Final Answer
     # clearly comes first in the text).
     action_m = _ACTION_RE.search(text)
@@ -139,6 +147,9 @@ def parse(text: str) -> ParseResult:
         return ParseResult(kind="action", tool_name=tool_name, tool_args=args)
 
     if final_m:
-        return ParseResult(kind="final", final=final_m.group(1).strip())
+        answer = final_m.group(1).strip()
+        if not answer:  # model output tag placeholder like <answer> — nudge it
+            return ParseResult(kind="none")
+        return ParseResult(kind="final", final=answer)
 
     return ParseResult(kind="none")

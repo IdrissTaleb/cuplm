@@ -207,6 +207,95 @@ def gen_unknown(n: int) -> list[dict]:
     return [_assemble(random.choice(qs), [("model", f"Final Answer: {ans}")]) for _ in range(n)]
 
 
+def gen_code_write(n: int) -> list[dict]:
+    """Direct code generation answers — NO tool, model writes code from memory."""
+    pairs = [
+        ("Write a Python function that adds two numbers.",
+         "def add(a, b):\n    return a + b"),
+        ("Write a Python function that reverses a string.",
+         "def reverse(s):\n    return s[::-1]"),
+        ("Write a Python function that checks if a number is even.",
+         "def is_even(n):\n    return n % 2 == 0"),
+        ("Write a Python function that returns the factorial of n.",
+         "def factorial(n):\n    if n <= 1: return 1\n    return n * factorial(n - 1)"),
+        ("Write a Python function that finds the maximum in a list.",
+         "def find_max(lst):\n    return max(lst)"),
+        ("Write a Python class for a simple stack.",
+         "class Stack:\n    def __init__(self): self.items = []\n    def push(self, x): self.items.append(x)\n    def pop(self): return self.items.pop()\n    def is_empty(self): return not self.items"),
+        ("How do I read a JSON file in Python?",
+         "import json\nwith open('file.json') as f:\n    data = json.load(f)"),
+        ("How do I sort a list of dicts by a key in Python?",
+         "sorted(items, key=lambda x: x['key'])"),
+        ("Write a Python function that checks if a string is a palindrome.",
+         "def is_palindrome(s):\n    s = s.lower().replace(' ', '')\n    return s == s[::-1]"),
+        ("How do I make an HTTP GET request in Python?",
+         "import urllib.request\nwith urllib.request.urlopen('http://example.com') as r:\n    data = r.read().decode()"),
+        ("Write a Python function to count word frequency in a string.",
+         "def word_freq(text):\n    words = text.lower().split()\n    freq = {}\n    for w in words: freq[w] = freq.get(w, 0) + 1\n    return freq"),
+        ("Write a Python function that flattens a nested list.",
+         "def flatten(lst):\n    out = []\n    for item in lst:\n        if isinstance(item, list): out.extend(flatten(item))\n        else: out.append(item)\n    return out"),
+    ]
+    out = []
+    for _ in range(n):
+        q, code = random.choice(pairs)
+        formatted = f"```python\n{code}\n```"
+        out.append(_assemble(q, [("model", f"Final Answer: {formatted}")]))
+    return out
+
+
+def gen_run_command(n: int) -> list[dict]:
+    """Tasks that need run_command to check the environment."""
+    pairs = [
+        ("What Python version is installed?",
+         "python --version", "Python"),
+        ("List all .txt files in the current directory.",
+         "dir *.txt" if os.name == "nt" else "ls *.txt", "txt"),
+        ("Create a directory called output.",
+         "mkdir output", ""),
+    ]
+    out = []
+    for _ in range(n):
+        with tempfile.TemporaryDirectory() as wd:
+            q, cmd, _ = random.choice(pairs)
+            try:
+                import subprocess
+                result = subprocess.run(
+                    cmd, shell=True, cwd=wd, capture_output=True, text=True, timeout=10
+                )
+                obs = (result.stdout + result.stderr).strip() or "(no output)"
+            except Exception as e:
+                obs = f"ERROR: {e}"
+            thought = (f"Thought: Run a command to find out.\n"
+                       f"Action: run_command\n"
+                       f'Action Input: {{"command": "{cmd}"}}')
+            final = f"Final Answer: {obs[:120]}"
+            out.append(_assemble(q, [("model", thought), ("obs", obs), ("model", final)]))
+    return out
+
+
+def gen_write_code_to_file(n: int) -> list[dict]:
+    """Write a Python script to a file using write_file — multi-step code tasks."""
+    tasks = [
+        ("hello.py", "print('Hello, World!')", "Write a Python hello world script and save it to hello.py."),
+        ("add.py", "def add(a, b):\n    return a + b\n\nprint(add(3, 4))", "Save a Python script that adds 3 and 4 to add.py."),
+        ("greet.py", "name = input('Name: ')\nprint(f'Hello, {name}!')", "Write a greeting script to greet.py that asks for a name."),
+        ("counter.py", "for i in range(1, 6):\n    print(i)", "Write a Python script that prints 1 through 5 and save it as counter.py."),
+    ]
+    out = []
+    for _ in range(n):
+        with tempfile.TemporaryDirectory() as wd:
+            fname, code, q = random.choice(tasks)
+            obs = _tool(wd, "write_file", {"path": fname, "content": code})
+            thought = (
+                f"Thought: Write the Python code to the file.\n"
+                f"Action: write_file\n"
+                f'Action Input: {{"path": "{fname}", "content": {json.dumps(code)}}}'
+            )
+            final = f"Final Answer: Saved the script to {fname}."
+            out.append(_assemble(q, [("model", thought), ("obs", obs), ("model", final)]))
+    return out
+
+
 def main() -> None:
     records: list[dict] = []
     records += gen_count_tasks(120)
@@ -218,6 +307,9 @@ def main() -> None:
     records += gen_math(120)
     records += gen_howto(60)
     records += gen_unknown(20)
+    records += gen_code_write(120)       # new: direct code generation
+    records += gen_write_code_to_file(60)  # new: write code to file
+    records += gen_run_command(20)       # new: shell command tasks
     random.shuffle(records)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -184,3 +184,30 @@ def test_max_steps_guard(tmp_path):
     result = agent.run("loop forever")
     assert result.stopped_reason == "max_steps"
     assert len(result.steps) == 3
+
+
+def test_parse_bare_answer_tag_returns_none():
+    # Model echoes the format placeholder verbatim: "Final Answer: <answer>"
+    # Should be treated as "none" (trigger a nudge), not as a blank final answer.
+    r = parse("Final Answer: <answer>")
+    assert r.kind == "none"
+
+
+def test_parse_answer_tag_mixed_with_real_text():
+    # If the tag appears mid-text the real words should survive
+    r = parse("Final Answer: Paris is the capital of France.")
+    assert r.kind == "final"
+    assert r.final == "Paris is the capital of France."
+
+
+def test_agent_nudges_on_placeholder_tag(tmp_path):
+    # First response = bare tag (bad), second = real answer — agent must recover.
+    agent = _agent(
+        [
+            "Final Answer: <answer>",
+            "Final Answer: The answer is 42.",
+        ],
+        tmp_path,
+    )
+    result = agent.run("What is 6 times 7?")
+    assert result.answer == "The answer is 42."
